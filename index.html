@@ -1,73 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universal TV Player - Video.js</title>
-    <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet" />
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #111; color: white; }
-        h1 { color: #fff; }
-        .player { max-width: 900px; margin: 0 auto; }
-        .channels { display: flex; flex-wrap: wrap; justify-content: center; margin: 20px 0; }
-        .channel-btn { background-color: #007bff; color: white; border: none; padding: 15px; margin: 5px; cursor: pointer; border-radius: 5px; font-size: 16px; }
-        .channel-btn:hover { background-color: #0056b3; }
-        #status { margin-top: 10px; color: yellow; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live TV Player</title>
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css">
+  <style>
+    body { background: #000; color: #fff; font-family: Arial; text-align: center; padding: 20px; }
+    video { width: 100%; max-width: 900px; height: 500px; display: block; margin: 0 auto; background: black; }
+  </style>
 </head>
 <body>
-    <h1>My TV Channel Player</h1>
-    <p>High-quality player for all links. Click a channel to play!</p>
-    <div class="channels">
-        <!-- Your channels. Add more by copying this line and changing the URL/name. -->
-        <button class="channel-btn" onclick="loadChannel('http://66.102.120.18:8000/play/a010/index.m3u8')">Channel A010</button>
-        <button class="channel-btn" onclick="loadChannel('http://cdn4.skygo.mn/live/disk1/SPSPlus/HLS-FTA/SPSPlus.m3u8')">SPS Plus</button>
-        <!-- Example: <button class="channel-btn" onclick="loadChannel('https://example.com/video.ts')">Direct TS Channel</button> -->
-    </div>
-    <div class="player">
-        <video id="my-video" class="video-js vjs-big-play-centered" controls preload="auto" width="640" height="360" data-setup="{}">
-            <p class="vjs-no-js">
-                To view this video please enable JavaScript, and consider upgrading to a web browser that
-                <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
-            </p>
-        </video>
-    </div>
-    <div id="status"></div>
 
-    <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@videojs/http-streaming@3.0.2/dist/videojs-http-streaming.min.js"></script>
-    <script>
-        const status = document.getElementById('status');
-        let player;
+<h1>Live TV Player</h1>
+<video id="player" controls playsinline></video>
 
-        // Initialize Video.js with HLS support
-        player = videojs('my-video', {
-            html5: {
-                hls: {
-                    overrideNative: true
-                },
-                nativeAudioTracks: false,
-                nativeVideoTracks: false
-            },
-            autoplay: false,
-            controls: true,
-            responsive: true,
-            fluid: true
-        });
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
 
-        function loadChannel(url) {
-            status.textContent = 'Loading channel...';
-            player.pause();
-            player.src({ src: url, type: url.endsWith('.m3u8') ? 'application/x-mpegURL' : 'video/mp4' }); // Auto-detect m3u8 or TS/MP4
-            player.ready(function() {
-                player.play();
-                status.textContent = 'Playing... High-quality stream!';
-            });
-            player.on('error', function() {
-                console.error('Video.js Error:', player.error());
-                status.textContent = 'Error: ' + (player.error() ? player.error().message : 'Unknown') + ' (Check console).';
-            });
-        }
-    </script>
+<script>
+  const video = document.getElementById('player');
+
+  // Your Cloudflare Worker URL (proxy)
+  const workerProxy = "https://plyr.mubeensagar60.workers.dev/?url=";
+
+  // Your IPTV link (HTTP/TS/M3U8)
+  const stream = "http://x96.us:8880/live/99608460/22676121/398983.m3u8";
+
+  const finalUrl = workerProxy + encodeURIComponent(stream);
+
+  if(Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(finalUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED,function() {
+          video.play();
+      });
+  } else if(video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = finalUrl;
+  }
+
+  const player = new Plyr(video, {
+      controls: ['play', 'progress', 'volume', 'fullscreen']
+  });
+</script>
+
 </body>
 </html>
