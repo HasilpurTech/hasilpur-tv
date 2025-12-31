@@ -1,48 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live TV Player</title>
-  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css">
-  <style>
-    body { background: #000; color: #fff; font-family: Arial; text-align: center; padding: 20px; }
-    video { width: 100%; max-width: 900px; height: 500px; display: block; margin: 0 auto; background: black; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live TV Player</title>
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css">
+<style>
+body { background:#000; color:#fff; font-family: Arial; text-align:center; padding:20px; }
+video { width:100%; max-width:900px; height:500px; margin:0 auto; display:block; background:black; }
+button { background:#007bff; color:#fff; border:none; padding:10px; margin:5px; cursor:pointer; border-radius:5px; }
+button:hover { background:#0056b3; }
+#channelList { margin-top:20px; display:flex; flex-wrap:wrap; justify-content:center; }
+</style>
 </head>
 <body>
 
 <h1>Live TV Player</h1>
 <video id="player" controls playsinline></video>
+<div id="channelList"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
 
 <script>
-  const video = document.getElementById('player');
+// =================== CONFIG ===================
+// Your Cloudflare Worker URL (proxy)
+const workerProxy = "https://plyr.mubeensagar60.workers.dev/?url=";
 
-  // Your Cloudflare Worker URL (proxy)
-  const workerProxy = "https://plyr.mubeensagar60.workers.dev/?url=";
+// Your IPTV channels
+const channels = [
+  { name: "Channel 1", url: "http://x96.us:8880/live/99608460/22676121/398983.m3u8" },
+  { name: "Channel 2", url: "http://cdn4.skygo.mn/live/disk1/SPSPlus/HLS-FTA/SPSPlus.m3u8" },
+  { name: "Channel 3", url: "http://example.com/channel3.m3u8" },
+  { name: "Channel 4", url: "http://example.com/channel4.m3u8" },
+  { name: "Channel 5", url: "http://example.com/channel5.m3u8" }
+  // Add more channels here in the same format
+];
+// =============================================
 
-  // Your IPTV link (HTTP/TS/M3U8)
-  const stream = "http://x96.us:8880/live/99608460/22676121/398983.m3u8";
+const video = document.getElementById('player');
+const channelListDiv = document.getElementById('channelList');
 
-  const finalUrl = workerProxy + encodeURIComponent(stream);
+// Create buttons for each channel
+channels.forEach(ch => {
+  const btn = document.createElement('button');
+  btn.textContent = ch.name;
+  btn.onclick = () => loadChannel(ch.url);
+  channelListDiv.appendChild(btn);
+});
+
+// Load channel function
+function loadChannel(url) {
+  const finalUrl = workerProxy + encodeURIComponent(url);
 
   if(Hls.isSupported()) {
       const hls = new Hls();
       hls.loadSource(finalUrl);
       hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED,function() {
-          video.play();
-      });
+      hls.on(Hls.Events.MANIFEST_PARSED,function() { video.play(); });
   } else if(video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = finalUrl;
+      video.play();
   }
+}
 
-  const player = new Plyr(video, {
-      controls: ['play', 'progress', 'volume', 'fullscreen']
-  });
+// Load first channel by default
+if(channels.length > 0) loadChannel(channels[0].url);
+
+// Initialize Plyr
+const player = new Plyr(video, {
+    controls: ['play','progress','volume','fullscreen']
+});
 </script>
 
 </body>
